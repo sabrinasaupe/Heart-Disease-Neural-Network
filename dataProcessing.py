@@ -11,14 +11,21 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# ======================================================
 # 1. Activation Functions
+# ======================================================
 def sigmoid(z):
+    # Clipped to handle extreme values safely during training
     return 1 / (1 + np.exp(-np.clip(z, -20, 20)))
 
 def sigmoid_derivative(a):
+    # a = sigmoid(z)
     return a * (1 - a)
 
+
+# ======================================================
 # 2. Data Loading & Preprocessing (Phase 2)
+# ======================================================
 df = pd.read_csv('heart.csv').dropna()
 print(f"Data Loaded: {df.shape[0]} rows, {df.shape[1]} columns.")
 
@@ -38,10 +45,14 @@ split = int(0.8 * len(indices))
 X_train, X_test = X_scaled[indices[:split]], X_scaled[indices[split:]]
 y_train, y_test = y[indices[:split]], y[indices[split:]]
 
+
+# ======================================================
 # 3. Simple Neural Network Structure (Phase 3)
+# ======================================================
 class SimpleNeuralNetwork:
     def __init__(self, input_dim, hidden_dim, output_dim, lr=0.6):
         np.random.seed(42)
+        # Xavier-like random weight initialization
         self.W1 = np.random.randn(input_dim, hidden_dim) * np.sqrt(1.0 / input_dim)
         self.b1 = np.zeros((1, hidden_dim))
         self.W2 = np.random.randn(hidden_dim, output_dim) * np.sqrt(1.0 / hidden_dim)
@@ -49,20 +60,26 @@ class SimpleNeuralNetwork:
         self.lr, self.loss_history, self.acc_history = lr, [], []
 
     def forward(self, X):
+        # Hidden layer
         self.a1 = sigmoid(np.dot(X, self.W1) + self.b1)
+        # Output layer
         self.a2 = sigmoid(np.dot(self.a1, self.W2) + self.b2)
         return self.a2
 
     def backprop(self, X, y_true):
         m = X.shape[0]
+        
+        # -------- Output layer calculation --------
         dZ2 = (self.a2 - y_true) * sigmoid_derivative(self.a2)
         dW2 = np.dot(self.a1.T, dZ2) / m
         db2 = np.sum(dZ2, axis=0, keepdims=True) / m
 
+        # -------- Hidden layer calculation --------
         dZ1 = np.dot(dZ2, self.W2.T) * sigmoid_derivative(self.a1)
         dW1 = np.dot(X.T, dZ1) / m
         db1 = np.sum(dZ1, axis=0, keepdims=True) / m
 
+        # -------- Gradient descent updates --------
         self.W2 -= self.lr * dW2; self.b2 -= self.lr * db2
         self.W1 -= self.lr * dW1; self.b1 -= self.lr * db1
 
@@ -76,69 +93,12 @@ class SimpleNeuralNetwork:
         for epoch in range(1, epochs + 1):
             self.forward(X)
             self.backprop(X, y)
-            self.loss_history.append(np.mean((self.a2 - y) ** 2))
-            self.acc_history.append(self.accuracy(X, y))
-
-# 4. Model Training
-nn = SimpleNeuralNetwork(X_train.shape[1], 16, 1)
-nn.fit(X_train, y_train)
-
-# 6. Interactive Medical Assessment CLI with Strict Validation (Phase 5)
-print("\n" + "="*65)
-print("             HEART RISK ASSESSMENT INFERENCE SYSTEM CLI          ")
-print("="*65)
-
-# Setup detailed labels, examples, and reference names for clinical attributes
-labels_info = [
-    ('AGE', 'Age in years', 52),
-    ('SEX', 'Gender [1 = Male, 0 = Female]', 1),
-    ('CP', 'Chest Pain Type [0 to 3]', 2),
-    ('TRESTBPS', 'Resting Blood Pressure in mm Hg', 125),
-    ('CHOL', 'Serum Cholesterol in mg/dl', 212),
-    ('FBS', 'Fasting Blood Sugar > 120 mg/dl [1 = True, 0 = False]', 0),
-    ('RESTECG', 'Resting Electrocardiographic results [0, 1, 2]', 1),
-    ('THALACH', 'Maximum Heart Rate Achieved', 168),
-    ('EXANG', 'Exercise Induced Angina [1 = Yes, 0 = No]', 0),
-    ('OLDPEAK', 'ST Depression Induced by Exercise', 1.0),
-    ('SLOPE', 'Slope of Peak Exercise ST Segment [0, 1, 2]', 2),
-    ('CA', 'Number of Major Vessels Colored [0 to 4]', 0),
-    ('THAL', 'Thalassemia Status [0 to 3]', 2)
-]
-
-user_inputs = []
-
-# Loop through every attribute index to process validation rules dynamically
-for idx, (name, description, sample) in enumerate(labels_info):
-    # Set localized min/max boundary constraints sourced from the training data bounds
-    min_allowed = feat_min[idx]
-    max_allowed = feat_max[idx]
-
-    while True:
-        try:
-            print(f"\n-> Required Input: {name} ({description})")
-            print(f"   [Range: {min_allowed} to {max_allowed} e.g. {sample}]")
-            val = float(input(f"   Enter {name}: "))
-
-            # Boundary restriction enforcement condition
-            if val < min_allowed or val > max_allowed:
-                print(f"   Value must be between {min_allowed} and {max_allowed}!")
-                continue
-
-            user_inputs.append(val)
-            break
-        except ValueError:
-            print("   Invalid input format. Please enter numerical values only.")
-
-# Scale the validated inputs using original training boundaries
-scaled_user = (np.array(user_inputs) - feat_min) / (feat_max - feat_min)
-proba = nn.forward(scaled_user.reshape(1, -1))[0][0]
-
-print("\n" + "="*65)
-print("                        DIAGNOSTIC ANALYSIS                      ")
-print("="*65)
-print(f"Computed Heart Disease Probability Index: {proba * 100:.2f}%")
-if proba >= 0.5:
-    print("Final Output Assessment: HIGH HEART RISK CONDITIONS DETECTED")
-else:
-    print("Final Output Assessment: LOW RISK FACTOR BASES DETECTED")
-print("="*65 + "\n")
+            
+            loss = np.mean((self.a2 - y) ** 2)
+            acc = self.accuracy(X, y)
+            
+            self.loss_history.append(loss)
+            self.acc_history.append(acc)
+            
+            if epoch % print_every == 0 or epoch == 1:
+                print(f"Epoch {epoch:4d} | Loss (MSE): {loss:.5f} | Training Accuracy: {acc * 10
