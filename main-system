@@ -1,0 +1,102 @@
+
+import numpy as np
+
+from dataProcessing import (
+    X_train,
+    X_test,
+    y_train,
+    y_test,
+    feat_min,
+    feat_max
+)
+
+from propagation import (
+    train,
+    predict
+)
+
+print("===================================")
+print("     TRAINING ANN MODEL")
+print("===================================\n")
+
+# Train the ANN model
+train(X_train, y_train, epochs=1000)
+
+print("\nTraining Complete.")
+
+# Feature names for user input
+feature_names = [
+    "Age",
+    "Sex",
+    "Chest Pain Type",
+    "Resting Blood Pressure",
+    "Cholesterol",
+    "Fasting Blood Sugar",
+    "Rest ECG",
+    "Max Heart Rate",
+    "Exercise Angina",
+    "Oldpeak",
+    "Slope",
+    "CA",
+    "Thal"
+]
+
+# Main prediction loop
+while True:
+
+    print("\n===================================")
+    print("      ANN HEART PREDICTION")
+    print("===================================")
+
+    user_data = []
+
+    # Collect user input
+    for i in range(13):
+
+        while True:
+
+            try:
+                value = float(input(f"Enter {feature_names[i]}: "))
+                user_data.append(value)
+                break
+
+            except:
+                print("Invalid input. Please enter numbers only.")
+
+    # Convert to numpy array
+    user_data = np.array(user_data)
+
+    # Normalize using training dataset min/max
+    user_scaled = (user_data - feat_min) / (feat_max - feat_min)
+
+    # Reshape for ANN input
+    user_scaled = user_scaled.reshape(1, -1)
+
+    # Get prediction probability
+    prediction = predict(user_scaled)
+
+    prediction_value = float(prediction[0][0])
+
+    print("\n========== RESULT ==========")
+
+    # Display prediction score
+    print(f"Prediction Score: {prediction_value:.2f}")
+
+    # Explain threshold
+    print("\nInterpretation:")
+    print("0.00 - 0.49  = No Heart Disease")
+    print("0.50 - 1.00  = Heart Disease Detected")
+
+    # Final classification
+    if prediction_value < 0.5:
+        print("\nFinal Prediction: No Heart Disease")
+    else:
+        print("\nFinal Prediction: Heart Disease Detected")
+
+    # Continue or exit
+    again = input("\nDo another prediction? (y/n): ")
+
+    if again.lower() != 'y':
+        print("\nSystem Ended.")
+        break
+
