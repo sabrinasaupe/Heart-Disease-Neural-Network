@@ -39,14 +39,8 @@ def forward_propagation(X):
 
 
 def compute_loss(y_true, y_pred):
-
-    # avoid log(0)
-    epsilon = 1e-8
-
-    return -np.mean(
-        y_true * np.log(y_pred + epsilon)
-        + (1 - y_true) * np.log(1 - y_pred + epsilon)
-    )
+    # Mean Squared Error formulation
+    return np.mean((y_true - y_pred) ** 2)
 
 
 def backward_propagation(X, y, Z1, A1, Z2, A2):
