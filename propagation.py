@@ -44,20 +44,21 @@ def compute_loss(y_true, y_pred):
 
 
 def backward_propagation(X, y, Z1, A1, Z2, A2):
-
     m = X.shape[0]
 
-    # output gradients
-    dZ2 = A2 - y
-    dW2 = (1 / m) * np.dot(A1.T, dZ2)
-    db2 = (1 / m) * np.sum(dZ2, axis=0, keepdims=True)
+    # CORRECTED OUTPUT LAYER GRADIENT FOR MSE + SIGMOID
+    # dZ2 = 2/m * (A2 - y) * sigmoid_derivative(A2)
+    dZ2 = (2 / m) * (A2 - y) * (A2 * (1 - A2))
+    
+    dW2 = np.dot(A1.T, dZ2)
+    db2 = np.sum(dZ2, axis=0, keepdims=True)
 
-    # propagate error back to hidden layer
+    # Propagate error back to hidden layer (remains structurally consistent)
     dA1 = np.dot(dZ2, W2.T)
-    dZ1 = dA1 * sigmoid_derivative(A1)
+    dZ1 = dA1 * (A1 * (1 - A1))
 
-    dW1 = (1 / m) * np.dot(X.T, dZ1)
-    db1 = (1 / m) * np.sum(dZ1, axis=0, keepdims=True)
+    dW1 = np.dot(X.T, dZ1)
+    db1 = np.sum(dZ1, axis=0, keepdims=True)
 
     return dW1, db1, dW2, db2
 
