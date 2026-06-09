@@ -93,7 +93,6 @@ def train(X, y, epochs):
 
 
 def predict(X):
-
     _, _, _, A2 = forward_propagation(X)
-
-    return (A2 >= 0.5).astype(int)
+    binary = (A2 >= 0.5).astype(int)
+    return A2, binary  # returns (confidence score, 0 or 1)
